@@ -1,0 +1,12 @@
+{
+
+  "app_name": "Notes App",
+  "home_title": "Home",
+  "new_note_title": "New Note",
+  "edit_note_title": "Edit Note",
+  "note_title": "Title",
+  "note_description": "Description",
+  "save": "Save",
+  "edit": "Edit",
+  "done": "Done"
+}
