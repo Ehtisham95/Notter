@@ -36,8 +36,12 @@ dependencies:
   cupertino_icons: ^1.0.2
   get_it: ^7.2.0
   get_it_mixin: ^3.1.4+2
+  floor: ^1.4.1
 
 dev_dependencies:
+  floor_generator: ^1.4.1
+  build_runner: ^2.1.2
+
   flutter_test:
     sdk: flutter
 
