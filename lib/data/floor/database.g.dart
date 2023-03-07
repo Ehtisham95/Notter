@@ -111,6 +111,24 @@ class _$NoteDao extends NoteDao {
                   'id': item.id,
                   'title': item.title,
                   'description': item.description
+                }),
+        _noteUpdateAdapter = UpdateAdapter(
+            database,
+            'Note',
+            ['id'],
+            (Note item) => <String, Object?>{
+                  'id': item.id,
+                  'title': item.title,
+                  'description': item.description
+                }),
+        _noteDeletionAdapter = DeletionAdapter(
+            database,
+            'Note',
+            ['id'],
+            (Note item) => <String, Object?>{
+                  'id': item.id,
+                  'title': item.title,
+                  'description': item.description
                 });
 
   final sqflite.DatabaseExecutor database;
@@ -120,6 +138,10 @@ class _$NoteDao extends NoteDao {
   final QueryAdapter _queryAdapter;
 
   final InsertionAdapter<Note> _noteInsertionAdapter;
+
+  final UpdateAdapter<Note> _noteUpdateAdapter;
+
+  final DeletionAdapter<Note> _noteDeletionAdapter;
 
   @override
   Future<List<Note>> findAllNotes() async {
@@ -143,5 +165,15 @@ class _$NoteDao extends NoteDao {
   @override
   Future<void> insertNote(Note note) async {
     await _noteInsertionAdapter.insert(note, OnConflictStrategy.abort);
+  }
+
+  @override
+  Future<void> updateNote(Note note) async {
+    await _noteUpdateAdapter.update(note, OnConflictStrategy.abort);
+  }
+
+  @override
+  Future<void> deleteNote(Note note) async {
+    await _noteDeletionAdapter.delete(note);
   }
 }

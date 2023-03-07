@@ -10,40 +10,47 @@ class NotesDetailsScreen extends StatefulWidget {
 }
 
 class _NotesDetailsState extends State<NotesDetailsScreen> {
-  late BuildContext buildContext;
+  String title = "";
+  String description = "";
+  int? id;
+  Note? note;
 
   @override
   Widget build(BuildContext context) {
-    buildContext = context;
-    final id = ModalRoute.of(context)?.settings.arguments as int?;
-    final Note? note = getNote(id);
-    String title = "";
-    String description = "";
-
-    return Scaffold(
-        appBar: AppBar(
-          title: Text((id == null) ? "Add Note" : "New Note"),
-          actions: [
-            MaterialButton(
-              onPressed: () async {
-                if (title.isNotEmpty && description.isNotEmpty) {
-                  await saveNote(title, description);
-                  createSnackBar("Note added successfully!");
-                  if (context.mounted) Navigator.pop(context);
-                }
-              },
-              textColor: Colors.white,
-              child: Text((id == null) ? "Save" : "Done"),
-            )
-          ],
-        ),
-        body: (note != null)
-            ? Column(children: [Text(note.title), Text(note.description)])
-            : Column(
+    return FutureBuilder(
+        future: evaluateNote(),
+        builder: (BuildContext context, AsyncSnapshot<Note?> returnedNote) {
+          return Scaffold(
+              appBar: AppBar(
+                title: Text((id == null) ? "Add Note" : "Update Note"),
+                actions: [
+                  MaterialButton(
+                    onPressed: () async {
+                      if (id == null &&
+                          title.isNotEmpty &&
+                          description.isNotEmpty) {
+                        await saveNote(title, description);
+                        createSnackBar("Note added successfully!");
+                        if (context.mounted) Navigator.pop(context);
+                      } else if (id != null &&
+                          title.isNotEmpty &&
+                          description.isNotEmpty) {
+                        await updateNote(title, description);
+                        createSnackBar("Note updated successfully!");
+                        if (context.mounted) Navigator.pop(context);
+                      }
+                    },
+                    textColor: Colors.white,
+                    child: Text((id == null) ? "Save" : "Done"),
+                  )
+                ],
+              ),
+              body: Column(
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: TextField(
+                      controller: TextEditingController()..text = title,
                       onChanged: (newTitle) {
                         title = newTitle;
                       },
@@ -53,6 +60,7 @@ class _NotesDetailsState extends State<NotesDetailsScreen> {
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: TextField(
+                      controller: TextEditingController()..text = description,
                       onChanged: (newDesc) {
                         description = newDesc;
                       },
@@ -67,11 +75,22 @@ class _NotesDetailsState extends State<NotesDetailsScreen> {
                   )
                 ],
               ));
+        });
   }
 
-  Note? getNote(int? id) {
+  Future<Note?> evaluateNote() async {
+    id = ModalRoute.of(context)?.settings.arguments as int?;
+    note = await getNote(id);
+    title = (note != null) ? note!.title : "";
+    description = (note != null) ? note!.description : "";
+    return note;
+  }
+
+  Future<Note?> getNote(int? id) async {
     if (id != null) {
-      return Note(id: 1, title: "Title", description: "Description");
+      final db = await NoteRepository.createInstance();
+      final note = await db.getNote(id);
+      return note;
     }
     return null;
   }
@@ -79,6 +98,12 @@ class _NotesDetailsState extends State<NotesDetailsScreen> {
   Future<void> saveNote(String title, String description) async {
     final noteRepo = await NoteRepository.createInstance();
     await noteRepo.insertNote(Note(title: title, description: description));
+  }
+
+  Future<void> updateNote(String title, String description) async {
+    final noteRepo = await NoteRepository.createInstance();
+    await noteRepo
+        .updateNote(Note(id: id, title: title, description: description));
   }
 
   void createSnackBar(String message) {

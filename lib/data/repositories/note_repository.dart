@@ -11,8 +11,7 @@ class NoteRepository {
 
   static Future<NoteRepository> createInstance() async {
     _instance ??= NoteRepository._(
-          await $FloorAppDatabase.databaseBuilder('app_database.db')
-              .build());
+        await $FloorAppDatabase.databaseBuilder('app_database.db').build());
     return _instance!;
   }
 
@@ -28,4 +27,11 @@ class NoteRepository {
     return await _appDatabase.notesDao.insertNote(note);
   }
 
+  Future<void> updateNote(Note note) async {
+    return await _appDatabase.notesDao.updateNote(note);
+  }
+
+  Future<void> deleteNote(Note note) async {
+    return await _appDatabase.notesDao.deleteNote(note);
+  }
 }

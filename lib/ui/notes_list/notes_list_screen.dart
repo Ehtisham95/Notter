@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:notes_app/data/repositories/note_repository.dart';
 import 'package:notes_app/utils/localization/Constants.dart';
 
+import '../../data/floor/notes/note.dart';
+
 class NotesListScreen extends StatefulWidget {
   const NotesListScreen({super.key});
 
@@ -24,11 +26,7 @@ class _NotesList extends State<NotesListScreen> {
         body: _notesListView(),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () {
-            Navigator.of(context)
-                .pushNamed(Constants.ROUTE_ADD_NOTES)
-                .then((value) {
-              _refreshList();
-            });
+            navigateToDetailsScreen(null);
           },
           label: const Text("Add"),
           icon: const Icon(Icons.add),
@@ -42,13 +40,26 @@ class _NotesList extends State<NotesListScreen> {
           if (widgets.isNotEmpty) {
             return ListView(children: widget.requireData);
           } else {
-            return const Center(child: Text("No Notes available"));
+            return Center(
+                child: Text("No Notes available",
+                    style: Theme.of(context).textTheme.titleLarge));
           }
         });
   }
 
   void _refreshList() {
-    setState(() {});
+    setState(() {
+      listIds.clear();
+      widgets.clear();
+    });
+  }
+
+  void navigateToDetailsScreen(Object? args) {
+    Navigator.of(context)
+        .pushNamed(Constants.ROUTE_ADD_NOTES, arguments: args)
+        .then((value) {
+      _refreshList();
+    });
   }
 
   Future<List<Widget>> getList() async {
@@ -58,21 +69,76 @@ class _NotesList extends State<NotesListScreen> {
       for (final note in list) {
         if (!listIds.contains(note.id)) {
           listIds.add(note.id!);
-          widgets.add(
-              NoteListItem(title: note.title, description: note.description));
+          widgets.add(NoteListItem(
+            title: note.title,
+            description: note.description,
+            onLongPressed: () {
+              deleteNote(note);
+            },
+            returnNote: () {
+              navigateToDetailsScreen(note.id);
+            },
+          ));
         }
       }
     }
     return widgets;
+  }
+
+  Future<void> deleteNote(Note note) async {
+    showDeleteDialog(context, () async {
+      final notesRepo = await NoteRepository.createInstance();
+      await notesRepo.deleteNote(note);
+      _refreshList();
+    });
+  }
+
+  showDeleteDialog(BuildContext context, void Function() onDelete) {
+    // set up the button
+    Widget okButton = TextButton(
+      onPressed: () {
+        onDelete();
+        Navigator.of(context).pop();
+      },
+      child: const Text("Yes"),
+    );
+
+    Widget cancelButton = TextButton(
+      onPressed: () {
+        Navigator.of(context).pop();
+      },
+      child: const Text("No"),
+    );
+
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(
+      title: const Text("Delete"),
+      content: const Text("Do you really want to delete this note?"),
+      actions: [okButton, cancelButton],
+    );
+
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
   }
 }
 
 class NoteListItem extends StatelessWidget {
   final String title;
   final String description;
+  final Function() returnNote;
+  final Function() onLongPressed;
 
   const NoteListItem(
-      {super.key, required this.title, required this.description});
+      {super.key,
+      required this.title,
+      required this.description,
+      required this.returnNote,
+      required this.onLongPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -81,11 +147,20 @@ class NoteListItem extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge,
+          GestureDetector(
+            onTap: returnNote,
+            onLongPress: onLongPressed,
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
           ),
-          Text(description, style: Theme.of(context).textTheme.bodyLarge),
+          GestureDetector(
+            onTap: returnNote,
+            onLongPress: onLongPressed,
+            child:
+                Text(description, style: Theme.of(context).textTheme.bodyLarge),
+          ),
           const Divider(
             color: Colors.grey,
           )
